@@ -1,5 +1,7 @@
-##### Disclaimer
-Right now, the repo is being rewritten from `firelab` to `pytorch-lightning`, so you may like to wait for the updates before using it.
+Official implementation of [Adversarial Generation of Continuous Images](https://arxiv.org/abs/2011.12026)
+
+### Disclaimer
+Right now, the repo is being rewritten/refactored from `firelab` to `pytorch-lightning`, so you may like to wait a week or two for the update before starting building it.
 
 ### INR-based GAN
 
