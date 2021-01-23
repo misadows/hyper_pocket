@@ -4,7 +4,7 @@ import argparse
 from firelab.utils.training_utils import fix_random_seed, run_tensorboard
 from firelab.config import Config
 
-from src.trainers import GANTrainer, StaticINRsTrainer
+from src.trainers import GANTrainer
 
 
 def read_cli_args():
@@ -27,13 +27,7 @@ def run(config_path: str, tb_port: int=None):
     else:
         fix_random_seed(config.random_seed)
 
-
-    TrainerCls = {
-        'GANTrainer': GANTrainer,
-        'StaticINRsTrainer': StaticINRsTrainer,
-    }[config.trainer]
-
-    trainer = TrainerCls(config)
+    trainer = GANTrainer(config)
 
     if not tb_port is None and trainer.is_main_process():
         trainer.logger.info(f'Starting tensorboard on port {tb_port}')

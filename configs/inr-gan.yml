@@ -82,7 +82,7 @@ hp:
     output_activation: "none"
     size_sampler:
       pos_emb_dim: 512
-      stats_path: "/ibex/scratch/skoroki/datasets/imagenet/sizes.npy"
+      stats_path: "data/imagenet/sizes.npy"
     resize_strategy: "crop"
 
   gen_ema:
@@ -161,7 +161,7 @@ hp:
 data:
   target_img_size: 32
   num_img_channels: 1
-  dir: "/tmp/skoroki/datasets/mnist"
+  dir: "data/mnist"
   name: "mnist"
   num_classes: 10
   is_variable_sized: false
@@ -178,7 +178,7 @@ datasets:
       name: "mnist"
       target_img_size: 32
       num_img_channels: 1
-      dir: "/tmp/skoroki/datasets/mnist"
+      dir: "data/mnist"
     hp:
       batch_size: 512
       discriminator: {dim: 16}
@@ -191,7 +191,7 @@ datasets:
       name: "lsun_bedroom"
       target_img_size: 128
       num_img_channels: 3
-      dir: "/tmp/skoroki/datasets/lsun/bedroom_train_lmdb"
+      dir: "data/lsun/bedroom_train_lmdb"
     hp:
       batch_size: 32
 
@@ -200,7 +200,7 @@ datasets:
       name: "lsun_cat"
       target_img_size: 256
       num_img_channels: 3
-      dir: "/tmp/skoroki/datasets/lsun/cat_train_lmdb"
+      dir: "data/lsun/cat_train_lmdb"
     hp:
       batch_size: 16
 
@@ -209,14 +209,23 @@ datasets:
       name: "lsun_conference_room"
       target_img_size: 64
       num_img_channels: 3
-      dir: "/tmp/skoroki/datasets/lsun/conference_room_train_lmdb"
+      dir: "data/lsun/conference_room_train_lmdb"
     hp:
       batch_size: 32
+
+  lsun_church_outdoor: &lsun_church_outdoor
+    data:
+      name: "lsun_church_outdoor"
+      target_img_size: 256
+      num_img_channels: 3
+      dir: "data/lsun/churches_outdoor_train_lmdb"
+    hp:
+      batch_size: 16
 
   ffhq_thumbs:
     data:
       name: "ffhq_thumbs"
-      dir: "/tmp/skoroki/datasets/ffhq/thumbnails128x128"
+      dir: "data/ffhq/thumbnails128x128"
       target_img_size: 128
       num_img_channels: 3
     hp:
@@ -225,7 +234,7 @@ datasets:
   ffhq_256:
     data:
       name: "ffhq_256"
-      dir: "/tmp/skoroki/datasets/ffhq/ffhq_256"
+      dir: "data/ffhq/ffhq_256"
       target_img_size: 256
       num_img_channels: 3
     hp:
@@ -234,7 +243,7 @@ datasets:
   ffhq_1024:
     data:
       name: "ffhq_1024"
-      dir: "/tmp/skoroki/datasets/ffhq/ffhq_1024"
+      dir: "data/ffhq/ffhq_1024"
       target_img_size: 1024
       num_img_channels: 3
     logging: &ffhq_1024_logging_params
@@ -256,7 +265,7 @@ datasets:
   celeba_1024:
     data:
       name: "celeba_1024"
-      dir: "/tmp/skoroki/datasets/celeba/celeba_1024"
+      dir: "data/celeba/celeba_1024"
       target_img_size: 1024
       num_img_channels: 3
     logging: *ffhq_1024_logging_params
@@ -265,7 +274,7 @@ datasets:
   celeba_thumbs:
     data:
       name: "celeba_thumbs"
-      dir: "/tmp/skoroki/datasets/celeba/thumbnails128x128"
+      dir: "data/celeba/thumbnails128x128"
       target_img_size: 128
       num_img_channels: 3
     hp:
@@ -274,7 +283,7 @@ datasets:
   imagenet_vs:
     data:
       name: "imagenet_vs"
-      dir: "/tmp/skoroki/datasets/imagenet/imagenet-vs-128"
+      dir: "data/imagenet/imagenet-vs-128"
       target_img_size: 128
       num_img_channels: 3
       num_classes: 1000
