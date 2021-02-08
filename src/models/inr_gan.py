@@ -9,7 +9,7 @@ from firelab.config import Config
 
 from src.models.gan import Discriminator
 from src.models.resnet_gan import ResnetDiscriminator
-from src.models.stylegan2.discriminator import Discriminator as StyleGAN2Discriminator
+from src.models.stylegan2.discriminator import Discriminator as StyleGAN2Discriminator, Encoder
 from src.models.inrs import SIRENs, FourierINRs, HierarchicalFourierINRs
 from src.models.layers import create_activation, SizeSampler, EqualLinear, ScaledLeakyReLU
 from src.utils.training_utils import sample_noise
@@ -84,7 +84,13 @@ class INRGenerator(nn.Module):
         if self.config.hp.generator.connector_bias_zero_init:
             self.connector.bias.data.mul_(np.sqrt(1 / dims[1]))
 
-    def forward(self, z: Tensor, img_size: int=None, aspect_ratios: List[float]=None) -> Tensor:
+        self.encoder = Encoder(self.config)
+
+    def forward(self, img):
+        z = self.encoder(img)
+        return self.forward_for_z(z)
+
+    def forward_for_z(self, z: Tensor, img_size: int=None, aspect_ratios: List[float]=None) -> Tensor:
         img_size = self.config.data.target_img_size if img_size is None else img_size
         inrs_weights = self.compute_model_forward(z)
 
@@ -120,11 +126,12 @@ class INRGenerator(nn.Module):
     def sample_noise(self, batch_size: int, correction: Config=None) -> Tensor:
         return sample_noise(self.config.hp.generator.dist, self.config.hp.generator.z_dim, batch_size, correction)
 
-    def generate_image(self, batch_size: int, device: str, return_activations: bool=False, return_labels: bool=False) -> Tensor:
+    def generate_image(self, x_real: Tensor, batch_size: int, device: str, return_activations: bool=False, return_labels: bool=False) -> Tensor:
         """
         Generates an INR and computes it
         """
-        inputs = self.sample_noise(batch_size).to(device) # [batch_size, z_dim]
+        #inputs = self.sample_noise(batch_size).to(device) # [batch_size, z_dim]
+        inputs = self.encoder(x_real)
         labels = None # In case of conditional generation
         aspect_ratios = None # In case of variable-sized generation
 

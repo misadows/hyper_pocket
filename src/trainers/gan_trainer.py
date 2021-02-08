@@ -17,7 +17,6 @@ from firelab.utils.training_utils import PiecewiseLinearScheme
 from torchvision import transforms
 from torchvision.utils import make_grid, save_image
 import matplotlib.pyplot as plt
-import horovod.torch as hvd
 import torch.multiprocessing as mp
 
 from src.models.gan import GAN32
@@ -53,7 +52,7 @@ class GANTrainer(BaseTrainer):
             raise NotImplementedError(f'Unknown model type: {self.config.model_type}')
 
     def is_main_process(self):
-        return (not self.is_distributed) or (hvd.rank() == 0)
+        return (not self.is_distributed)
 
     def init_models(self):
         self.model = self.build_model().to(self.device_name)
@@ -206,10 +205,10 @@ class GANTrainer(BaseTrainer):
         else:
             y = None
 
-        self.run_fn_with_profiling(self.discriminator_step, x, y)
+        #self.run_fn_with_profiling(self.discriminator_step, x, y)
 
         if self.num_iters_done % self.config.hp.num_discr_steps_per_gen_step == 0:
-            self.run_fn_with_profiling(self.generator_step)
+            self.run_fn_with_profiling(self.generator_step, x)
 
         if self.config.hp.get('progressive_transform.enabled'):
             self.transform.update(self.num_iters_done)
@@ -232,8 +231,8 @@ class GANTrainer(BaseTrainer):
         # TODO(universome): this should be implemented with callbacks I think
         if not self.is_main_process(): return
 
-        if self.check_if_time_to_log('activations'):
-            self.run_fn_with_profiling(self.log_activations)
+        # if self.check_if_time_to_log('activations'):
+        #     self.run_fn_with_profiling(self.log_activations)
 
         if self.check_if_time_to_log('weights'):
             self.run_fn_with_profiling(self.log_weights)
@@ -376,15 +375,15 @@ class GANTrainer(BaseTrainer):
             if self.config.hp.grad_penalty.get('schedule.enabled'):
                 self.writer.add_scalar('discr/gp_weight', gp_weight, self.num_iters_done)
 
-    def generator_step(self):
+    def generator_step(self, x_real: Tensor):
         total_loss = 0.0
 
-        x_fake, labels_fake = self.model.generator.generate_image(self.config.hp.batch_size, self.device_name, return_labels=True)
+        x_fake, labels_fake = self.model.generator.generate_image(x_real, self.config.hp.batch_size, self.device_name, return_labels=True)
 
-        self.toggle_discr_grads(False) # TODO: does it break discr grads?
-        adv_logits_on_fake = self.model.discriminator(x_fake, labels_fake)
-        self.toggle_discr_grads(True)
-        adv_loss = self.compute_loss(adv_logits_on_fake, True)
+        # self.toggle_discr_grads(False) # TODO: does it break discr grads?
+        # adv_logits_on_fake = self.model.discriminator(x_fake, labels_fake)
+        # self.toggle_discr_grads(True)
+        # adv_loss = self.compute_loss(adv_logits_on_fake, True)
 
         if self.config.hp.get('fid_loss.enabled'):
             feats_fake = self.feat_extractor(x_fake * 0.5 + 0.5)[0] # [-1, 1] => [0, 1]
@@ -399,12 +398,14 @@ class GANTrainer(BaseTrainer):
             if self.is_main_process():
                 self.writer.add_scalar(f'gen/batch_fid', fid.item(), self.num_iters_done)
 
-        total_loss += adv_loss
+        #total_loss += adv_loss
+        total_loss += torch.nn.functional.l1_loss(x_fake, x_real)
+
 
         self.perform_optim_step(total_loss, 'generator')
 
-        if self.is_main_process():
-            self.writer.add_scalar(f'gen/adv_loss', adv_loss.item(), self.num_iters_done)
+        # if self.is_main_process():
+        #     self.writer.add_scalar(f'gen/adv_loss', adv_loss.item(), self.num_iters_done)
 
         self.update_gen_ema()
 
