@@ -153,6 +153,12 @@ class GANTrainer(BaseTrainer):
             inputs = inputs = torch.cat([inputs, aspect_ratios_embs], dim=1) # [size, z_dim + class_emb_dim + aspect_ratio_emb_dim]
 
         self.fixed_noise = inputs
+        self.fixed_imgs = []
+        for i, imgs in enumerate(self.train_dataloader):
+            if i*self.config.hp.batch_size > size:
+                break
+            self.fixed_imgs.append(imgs)
+        self.fixed_imgs = torch.cat(self.fixed_imgs)[:size]
 
     def after_init_hook(self):
         # Fixed noise for validation
@@ -461,17 +467,20 @@ class GANTrainer(BaseTrainer):
 
     @torch.no_grad()
     def sample_grid(self, img_size: int):
-        fixed_noise = self.fixed_noise[:self.config.logging.num_imgs_to_display]
-        batch_size, z_dim = self.config.logging.log_imgs_batch_size, fixed_noise.size(1)
-        n_iters = len(fixed_noise) // batch_size
-        inputs = fixed_noise.view(n_iters, batch_size, z_dim)
+        #fixed_noise = self.fixed_noise[:self.config.logging.num_imgs_to_display]
+        fixed_imgs = self.fixed_imgs[:self.config.logging.num_imgs_to_display]
+        #batch_size, z_dim = self.config.logging.log_imgs_batch_size, fixed_noise.size(1)
+        batch_size = self.config.logging.log_imgs_batch_size
+        n_iters = len(fixed_imgs) // batch_size
+        inputs = fixed_imgs.view(n_iters, batch_size, *fixed_imgs.size[1:])
 
         if self.config.data.is_variable_sized:
             aspect_ratios = self.aspect_ratios[:n_iters * batch_size].view(n_iters, batch_size)
         else:
             aspect_ratios = [None] * n_iters
 
-        imgs = torch.stack([self.gen_ema(zs, img_size, ars).cpu() for zs, ars in zip(inputs, aspect_ratios)])
+        #imgs = torch.stack([self.gen_ema(zs, img_size, ars).cpu() for zs, ars in zip(inputs, aspect_ratios)])
+        imgs = torch.stack([self.gen_ema(zs).cpu() for zs, ars in zip(inputs, aspect_ratios)])
         imgs = imgs.view(batch_size * n_iters, *imgs.shape[2:]) # [n_iters * batch_size, n_channels, img_size, img_size]
         imgs = imgs / 2 + 0.5
         samples_grid = make_grid(imgs, nrow=batch_size)
