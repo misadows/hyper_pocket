@@ -154,7 +154,7 @@ class GANTrainer(BaseTrainer):
 
         self.fixed_noise = inputs
         self.fixed_imgs = []
-        for i, imgs in enumerate(self.train_dataloader):
+        for i, (imgs,_) in enumerate(self.train_dataloader):
             if i*self.config.hp.batch_size > size:
                 break
             self.fixed_imgs.append(imgs)
