@@ -80,16 +80,19 @@ class INRGenerator(nn.Module):
             *[INRGeneratorBlock(dims[i], dims[i+1], self.config.hp.generator.layer, is_first_layer=(i==0)) for i in range(len(dims) - 2)])
         self.connector = nn.Linear(dims[-2], dims[-1])
 
+
         # self.connector.weight.data.mul_(np.sqrt(1 / dims[1]))
         if self.config.hp.generator.connector_bias_zero_init:
             self.connector.bias.data.mul_(np.sqrt(1 / dims[1]))
 
-        self.encoder = Encoder(self.config)
+        self.encoder = Encoder(self.config, True)
 
     def forward(self, img, img_size: int=None):
         img_size = self.config.data.target_img_size if img_size is None else img_size
 
         z = self.encoder(img)
+        mu, logvar = torch.chunk(z, 2, dim=1)
+        z = self.reparameterize(mu, logvar)
         return self.forward_for_z(z, img_size)
 
     def forward_for_z(self, z: Tensor, img_size: int=None, aspect_ratios: List[float]=None) -> Tensor:
@@ -128,12 +131,20 @@ class INRGenerator(nn.Module):
     def sample_noise(self, batch_size: int, correction: Config=None) -> Tensor:
         return sample_noise(self.config.hp.generator.dist, self.config.hp.generator.z_dim, batch_size, correction)
 
+    def reparameterize(self, mu, logvar):
+        std = logvar.mul(0.5).exp_()
+        esp = torch.randn(*mu.size()).cuda()
+        z = mu + std * esp
+        return z
+
     def generate_image(self, x_real: Tensor, batch_size: int, device: str, return_activations: bool=False, return_labels: bool=False) -> Tensor:
         """
         Generates an INR and computes it
         """
         #inputs = self.sample_noise(batch_size).to(device) # [batch_size, z_dim]
         inputs = self.encoder(x_real)
+        mu, logvar = torch.chunk(inputs, 2, dim=1)
+        inputs = self.reparameterize(mu, logvar)
         labels = None # In case of conditional generation
         aspect_ratios = None # In case of variable-sized generation
 
@@ -177,9 +188,9 @@ class INRGenerator(nn.Module):
             images = generation_result
 
             if return_labels:
-                return images, labels
+                return images, (mu,logvar), labels
             else:
-                return images
+                return images, (mu,logvar)
 
 
 class INRGeneratorBlock(nn.Module):

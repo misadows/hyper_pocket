@@ -384,7 +384,7 @@ class GANTrainer(BaseTrainer):
     def generator_step(self, x_real: Tensor):
         total_loss = 0.0
 
-        x_fake, labels_fake = self.model.generator.generate_image(x_real, self.config.hp.batch_size, self.device_name, return_labels=True)
+        x_fake, (mu, logvar), labels_fake = self.model.generator.generate_image(x_real, self.config.hp.batch_size, self.device_name, return_labels=True)
 
         # self.toggle_discr_grads(False) # TODO: does it break discr grads?
         # adv_logits_on_fake = self.model.discriminator(x_fake, labels_fake)
@@ -405,7 +405,11 @@ class GANTrainer(BaseTrainer):
                 self.writer.add_scalar(f'gen/batch_fid', fid.item(), self.num_iters_done)
 
         #total_loss += adv_loss
-        total_loss += torch.nn.functional.l1_loss(x_fake, x_real)
+        l1 = torch.nn.functional.l1_loss(x_fake, x_real)
+        KLD = -0.5 * torch.sum(1 + logvar - mu ** 2 - logvar.exp())
+        total_loss = l1 + KLD
+        self.writer.add_scalar(f'gen/l1', l1.item(), self.num_iters_done)
+        self.writer.add_scalar(f'gen/kld', KLD.item(), self.num_iters_done)
 
 
         self.perform_optim_step(total_loss, 'generator')
