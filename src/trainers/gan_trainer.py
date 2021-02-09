@@ -472,7 +472,7 @@ class GANTrainer(BaseTrainer):
         #batch_size, z_dim = self.config.logging.log_imgs_batch_size, fixed_noise.size(1)
         batch_size = self.config.logging.log_imgs_batch_size
         n_iters = len(fixed_imgs) // batch_size
-        inputs = fixed_imgs.view(n_iters, batch_size, *fixed_imgs.size[1:])
+        inputs = fixed_imgs.view(n_iters, batch_size, *fixed_imgs.shape[1:])
 
         if self.config.data.is_variable_sized:
             aspect_ratios = self.aspect_ratios[:n_iters * batch_size].view(n_iters, batch_size)
@@ -480,7 +480,7 @@ class GANTrainer(BaseTrainer):
             aspect_ratios = [None] * n_iters
 
         #imgs = torch.stack([self.gen_ema(zs, img_size, ars).cpu() for zs, ars in zip(inputs, aspect_ratios)])
-        imgs = torch.stack([self.gen_ema(zs).cpu() for zs, ars in zip(inputs, aspect_ratios)])
+        imgs = torch.stack([self.gen_ema(zs.to(self.device_name)).cpu() for zs, ars in zip(inputs, aspect_ratios)])
         imgs = imgs.view(batch_size * n_iters, *imgs.shape[2:]) # [n_iters * batch_size, n_channels, img_size, img_size]
         imgs = imgs / 2 + 0.5
         samples_grid = make_grid(imgs, nrow=batch_size)
