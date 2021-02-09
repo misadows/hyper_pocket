@@ -601,7 +601,7 @@ class GANTrainer(BaseTrainer):
         n_iters = num_images // self.config.fid.batch_size
         #noise_ds = self.fixed_noise[:num_images].view(n_iters, self.config.fid.batch_size, -1).to(self.device_name)
         fixed_imgs = self.fixed_imgs[:num_images]
-        fixed_imgs.view(n_iters, self.config.fid.batch_size, *fixed_imgs.shape[1:]).to(self.device_name)
+        fixed_imgs = fixed_imgs.view(n_iters, self.config.fid.batch_size, *fixed_imgs.shape[1:]).to(self.device_name)
         if self.config.data.is_variable_sized:
             aspect_ratios = self.aspect_ratios[:num_images].view(n_iters, self.config.fid.batch_size)
             ds_fake = torch.cat([self.gen_ema(zs, img_size=img_size, aspect_ratios=ars).cpu() for zs, ars in zip(noise_ds, aspect_ratios)], dim=0)
