@@ -86,9 +86,11 @@ class INRGenerator(nn.Module):
 
         self.encoder = Encoder(self.config)
 
-    def forward(self, img):
+    def forward(self, img, img_size: int=None):
+        img_size = self.config.data.target_img_size if img_size is None else img_size
+
         z = self.encoder(img)
-        return self.forward_for_z(z)
+        return self.forward_for_z(z, img_size)
 
     def forward_for_z(self, z: Tensor, img_size: int=None, aspect_ratios: List[float]=None) -> Tensor:
         img_size = self.config.data.target_img_size if img_size is None else img_size
