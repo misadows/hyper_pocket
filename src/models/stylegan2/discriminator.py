@@ -162,69 +162,6 @@ class Discriminator(nn.Module):
 
 
 class Encoder(nn.Module):
-    def __init__(self, config: Config):
-        super().__init__()
-
-        self.config = config
-        channels = {
-            4: 512,
-            8: 512,
-            16: 512,
-            32: 512,
-            64: 256 * config.hp.discriminator.channel_multiplier,
-            128: 128 * config.hp.discriminator.channel_multiplier,
-            256: 64 * config.hp.discriminator.channel_multiplier,
-            512: 32 * config.hp.discriminator.channel_multiplier,
-            1024: 16 * config.hp.discriminator.channel_multiplier,
-        }
-
-        convs = [ConvLayer(3, channels[config.data.target_img_size], 1)]
-        log_size = int(math.log(config.data.target_img_size, 2))
-        in_channel = channels[config.data.target_img_size]
-
-        for i in range(log_size, 2, -1):
-            out_channel = channels[2 ** (i - 1)]
-            convs.append(ResBlock(in_channel, out_channel, config.hp.discriminator.blur_kernel))
-            in_channel = out_channel
-
-        self.convs = nn.Sequential(*convs)
-
-        self.stddev_group = 4
-        self.stddev_feat = 1
-
-        if self.config.data.name == 'imagenet_vs':
-            num_output_logits = self.config.data.num_classes
-        else:
-            num_output_logits = 1
-
-        self.final_conv = ConvLayer(in_channel + 1, channels[4], 3)
-        self.final_linear = nn.Sequential(
-            EqualLinear(channels[4] * 4 * 4, channels[4], activation='fused_lrelu'),
-            #EqualLinear(channels[4], num_output_logits),
-        )
-
-    def forward(self, input, labels=None):
-        assert labels is None or len(input) == len(labels), f"Wrong lens: {input.shape} vs {labels.shape}"
-        out = self.convs(input)
-
-        batch, channel, height, width = out.shape
-        group = min(batch, self.stddev_group)
-        stddev = out.view(group, -1, self.stddev_feat, channel // self.stddev_feat, height, width)
-        stddev = torch.sqrt(stddev.var(0, unbiased=False) + 1e-8)
-        stddev = stddev.mean([2, 3, 4], keepdims=True).squeeze(2)
-        stddev = stddev.repeat(group, 1, height, width)
-        out = torch.cat([out, stddev], 1)
-
-        out = self.final_conv(out)
-        out = out.view(batch, -1)
-        out = self.final_linear(out)
-
-        if labels is None:
-            return out
-        else:
-            return out[range(len(labels)), labels]
-
-class Encoder(nn.Module):
     def __init__(self, config: Config, vae=False):
         super().__init__()
 
@@ -262,23 +199,23 @@ class Encoder(nn.Module):
 
         self.final_conv = ConvLayer(in_channel + 1, channels[4], 3)
         mlp = 2 if vae else 1
-        self.final_linear = nn.Sequential(
-            EqualLinear(channels[4] * 4 * 4, channels[4] * mlp, activation='fused_lrelu'),
-            #EqualLinear(channels[4], num_output_logits),
-        )
+        #self.final_linear = nn.Sequential(
+        #    EqualLinear(channels[4] * 4 * 4, channels[4] * mlp, activation='fused_lrelu'),
+        #    #EqualLinear(channels[4], num_output_logits),
+        #)
+        self.final_linear = nn.Linear(channels[4] * 4 * 4, channels[4] * mlp)
 
     def forward(self, input, labels=None):
         assert labels is None or len(input) == len(labels), f"Wrong lens: {input.shape} vs {labels.shape}"
         out = self.convs(input)
 
         batch, channel, height, width = out.shape
-        group = min(batch, self.stddev_group)
-        stddev = out.view(group, -1, self.stddev_feat, channel // self.stddev_feat, height, width)
-        stddev = torch.sqrt(stddev.var(0, unbiased=False) + 1e-8)
-        stddev = stddev.mean([2, 3, 4], keepdims=True).squeeze(2)
-        stddev = stddev.repeat(group, 1, height, width)
-        out = torch.cat([out, stddev], 1)
-
+        # group = min(batch, self.stddev_group)
+        # stddev = out.view(group, -1, self.stddev_feat, channel // self.stddev_feat, height, width)
+        # stddev = torch.sqrt(stddev.var(0, unbiased=False) + 1e-8)
+        # stddev = stddev.mean([2, 3, 4], keepdims=True).squeeze(2)
+        # stddev = stddev.repeat(group, 1, height, width)
+        # out = torch.cat([out, stddev], 1)
         out = self.final_conv(out)
         out = out.view(batch, -1)
         out = self.final_linear(out)
