@@ -197,7 +197,7 @@ class Encoder(nn.Module):
         else:
             num_output_logits = 1
 
-        self.final_conv = ConvLayer(in_channel + 1, channels[4], 3)
+        self.final_conv = ConvLayer(in_channel, channels[4], 3)
         mlp = 2 if vae else 1
         #self.final_linear = nn.Sequential(
         #    EqualLinear(channels[4] * 4 * 4, channels[4] * mlp, activation='fused_lrelu'),
