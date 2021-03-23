@@ -16,7 +16,7 @@ def construct_optimizer(model: nn.Module, optim_config: Config):
         'rms_prop': torch.optim.RMSprop
     }
 
-    if optim_config.has('groups'):
+    if False and  optim_config.has('groups'):
         groups = [{'params': getattr(model, g).parameters(), **optim_config.groups.get(g)} for g in sorted(optim_config.groups.keys())]
     else:
         groups = [{'params': model.parameters()}]

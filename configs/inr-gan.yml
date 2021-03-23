@@ -3,7 +3,7 @@ random_seed: 42
 exp_name: "inr_gan"
 dataset: "ffhq_thumbs"
 model_type: "inr_gan"
-exp_series_dir: "/ibex/scratch/skoroki/meta-generation/experiments/unsorted"
+exp_series_dir: "./results/"
 checkpoint:
   freq_iters: 10000
   separate_checkpoints: true
@@ -152,7 +152,7 @@ hp:
       mapping_network: {lr: 0.00005, betas: [0.0, 0.98]}
       connector: {lr: 0.00005, betas: [0.0, 0.98]}
       inr: {lr: 0.0005, betas: [0.0, 0.98]}
-    kwargs: {}
+    kwargs: {lr: 0.0005, betas: [0.0, 0.98]}
 
   discr_optim:
     type: "adam"
